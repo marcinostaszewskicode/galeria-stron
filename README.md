@@ -1,2 +1,2 @@
-# galeria-stron
-Galeria z listą wybranych stron do wykorzystania w szkole
+# Galeria wybranych stron
+Galeria z listą wybranych stron, m.in. do wykorzystania w szkole
