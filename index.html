@@ -28,8 +28,16 @@
   /* Tytuł obrócony o 90° w lewo */
   .side-title {
     flex: 0 0 auto;
-    padding: 16px 10px;
+    padding: 12px 8px;
     border-right: 1px solid var(--border);
+  }
+  .side-inner {
+    position: sticky;
+    top: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
   }
   .side-title h1 {
     margin: 0;
@@ -38,29 +46,36 @@
     font-size: 1.6rem;
     letter-spacing: .04em;
     white-space: nowrap;
-    position: sticky;
-    top: 16px;
+  }
+
+  /* Select obrócony o 90° w lewo (zajmuje tylko ~30px szerokości) */
+  .rot-select {
+    position: relative;
+    width: 30px;
+    height: 100px;
+  }
+  .rot-select select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100px;
+    height: 30px;
+    transform-origin: top left;
+    transform: translateY(100px) rotate(-90deg);
+    font: inherit;
+    font-size: .85rem;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
   }
 
   .content {
     flex: 1 1 auto;
     min-width: 0;
     padding: 16px;
-  }
-
-  .toolbar {
-    display: flex;
-    justify-content: flex-start;
-    margin-bottom: 16px;
-  }
-  .toolbar select {
-    font: inherit;
-    padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--text);
-    cursor: pointer;
   }
 
   /* Siatka wyrównana do lewej; liczba kolumn ustawiana w JS */
@@ -91,6 +106,7 @@
 
   /* Wiersz 1: miniatura */
   .thumb {
+    container-type: inline-size;
     display: block;
     position: relative;
     aspect-ratio: 4 / 3;
@@ -111,13 +127,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.6rem;
+    font-size: 28cqw;
     font-weight: 700;
     color: #fff;
+    white-space: nowrap;
   }
 
-  /* Wiersz 2: nazwa */
+  /* Wiersz 2: nazwa + Kopiuj */
+  .namerow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
   .name {
+    flex: 1 1 auto;
+    min-width: 0;
     color: var(--text);
     font-weight: 600;
     text-decoration: none;
@@ -137,7 +162,7 @@
   .linkrow a {
     flex: 1 1 auto;
     min-width: 0;
-    font-size: .8rem;
+    font-size: .72rem;
     color: var(--accent);
     text-decoration: none;
     overflow: hidden;
@@ -159,6 +184,14 @@
   .copy:hover { background: #e8edf5; }
   .copy.ok { background: #d8f3dc; border-color: #95d5a4; }
 
+  /* Rozmiar „Mikro" – mniejsze odstępy i czcionki */
+  .gallery[data-size="micro"] { gap: 10px; }
+  .gallery[data-size="micro"] .card { padding: 6px; gap: 5px; border-radius: 10px; }
+  .gallery[data-size="micro"] .thumb { border-radius: 7px; }
+  .gallery[data-size="micro"] .name { font-size: .78rem; }
+  .gallery[data-size="micro"] .linkrow a { font-size: .65rem; }
+  .gallery[data-size="micro"] .copy { font-size: .68rem; padding: 2px 6px; }
+
   @media (max-width: 600px) {
     .side-title h1 { font-size: 1.2rem; }
     .content { padding: 10px; }
@@ -167,16 +200,21 @@
 </head>
 <body>
 
-<aside class="side-title"><h1>Wybrane strony</h1></aside>
+<aside class="side-title">
+  <div class="side-inner">
+    <div class="rot-select">
+      <select id="sizeSelect" aria-label="Rozmiar kafelków">
+        <option value="micro">Mikro</option>
+        <option value="small">Mały</option>
+        <option value="medium" selected>Średni</option>
+        <option value="large">Duży</option>
+      </select>
+    </div>
+    <h1>Wybrane strony</h1>
+  </div>
+</aside>
 
 <main class="content">
-  <div class="toolbar">
-    <select id="sizeSelect" aria-label="Rozmiar kafelków">
-      <option value="small">Mały</option>
-      <option value="medium" selected>Średni</option>
-      <option value="large">Duży</option>
-    </select>
-  </div>
   <div class="gallery" id="gallery"></div>
 </main>
 
@@ -187,6 +225,7 @@
 
   // Aby dodać stronę, dopisz kolejny wiersz.
   // Opcjonalnie: thumb: "adres-obrazka.png" – własna miniatura zamiast zrzutu ekranu.
+  // Opcjonalnie: short: "ST" – skrót wyświetlany w miniaturze zamiast pierwszej litery nazwy.
   const pages = [
     { name: "Szkolny timer lekcji",              slug: "school-timer/" },
     { name: "Ćwiczenia użycia myszki",           slug: "mouse-practice-game/" },
@@ -203,7 +242,7 @@
   ];
 
   // Liczba kafelków w rzędzie dla poszczególnych rozmiarów.
-  const SIZES = { small: 6, medium: 5, large: 4 };
+  const SIZES = { micro: 7, small: 6, medium: 5, large: 4 };
   // ==========================
 
   const gallery = document.getElementById("gallery");
@@ -254,7 +293,10 @@
     const ph = document.createElement("div");
     ph.className = "ph";
     ph.style.background = colorFor(page.name);
-    ph.textContent = page.name.trim().charAt(0).toUpperCase();
+    const label = page.short ? String(page.short) : page.name.trim().charAt(0).toUpperCase();
+    ph.textContent = label;
+    // dłuższe skróty są automatycznie pomniejszane, by mieściły się w miniaturze
+    ph.style.fontSize = "min(28cqw, " + (88 / Math.max(label.length, 1)) + "cqw)";
     thumbLink.appendChild(ph);
 
     const img = document.createElement("img");
@@ -277,7 +319,7 @@
     name.textContent = page.name;
     name.title = page.name;
 
-    // 3. link + Kopiuj
+    // 3. link
     const row = document.createElement("div");
     row.className = "linkrow";
 
@@ -307,10 +349,14 @@
     });
 
     row.appendChild(link);
-    row.appendChild(btn);
+
+    const nameRow = document.createElement("div");
+    nameRow.className = "namerow";
+    nameRow.appendChild(name);
+    nameRow.appendChild(btn);
 
     card.appendChild(thumbLink);
-    card.appendChild(name);
+    card.appendChild(nameRow);
     card.appendChild(row);
     gallery.appendChild(card);
   });
@@ -321,14 +367,16 @@
     if (w < 700)  return 2;
     if (w < 950)  return 3;
     if (w < 1250) return 4;
-    if (w < 1500) return 5;
-    return 6;
+    if (w < 1400) return 5;
+    if (w < 1600) return 6;
+    return 7;
   }
 
   function applyLayout() {
     const wanted = SIZES[sizeSelect.value] || 5;
     const cols = Math.min(wanted, maxColsForWidth(window.innerWidth));
     gallery.style.setProperty("--cols", cols);
+    gallery.dataset.size = sizeSelect.value;
   }
 
   try {
