@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wybrane strony</title>
+<style>
+  :root {
+    --bg: #eceef1;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #6b7785;
+    --accent: #2f6fed;
+    --border: #d9dde3;
+    --gap: 16px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
+  }
+
+  /* Tytuł obrócony o 90° w lewo */
+  .side-title {
+    flex: 0 0 auto;
+    padding: 16px 10px;
+    border-right: 1px solid var(--border);
+  }
+  .side-title h1 {
+    margin: 0;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 1.6rem;
+    letter-spacing: .04em;
+    white-space: nowrap;
+    position: sticky;
+    top: 16px;
+  }
+
+  .content {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 16px;
+  }
+
+  .toolbar {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 16px;
+  }
+  .toolbar select {
+    font: inherit;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  /* Siatka wyrównana do lewej; liczba kolumn ustawiana w JS */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
+    gap: var(--gap);
+    justify-content: start;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    transition: box-shadow .15s, transform .15s;
+  }
+  .card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.14);
+    transform: translateY(-2px);
+  }
+
+  /* Wiersz 1: miniatura */
+  .thumb {
+    display: block;
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #dfe4ea;
+  }
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+  }
+  .thumb .ph {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* Wiersz 2: nazwa */
+  .name {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .name:hover { color: var(--accent); }
+
+  /* Wiersz 3: link + Kopiuj */
+  .linkrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .linkrow a {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: .8rem;
+    color: var(--accent);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .linkrow a:hover { text-decoration: underline; }
+  .copy {
+    flex: 0 0 auto;
+    font: inherit;
+    font-size: .8rem;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #f5f7fa;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .copy:hover { background: #e8edf5; }
+  .copy.ok { background: #d8f3dc; border-color: #95d5a4; }
+
+  @media (max-width: 600px) {
+    .side-title h1 { font-size: 1.2rem; }
+    .content { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="side-title"><h1>Wybrane strony</h1></aside>
+
+<main class="content">
+  <div class="toolbar">
+    <select id="sizeSelect" aria-label="Rozmiar kafelków">
+      <option value="small">Mały</option>
+      <option value="medium" selected>Średni</option>
+      <option value="large">Duży</option>
+    </select>
+  </div>
+  <div class="gallery" id="gallery"></div>
+</main>
+
+<script>
+  // ====== KONFIGURACJA ======
+  // Wspólny początek adresów – wystarczy dopisywać same końcówki (slug).
+  const BASE_URL = "https://marcinostaszewskicode.github.io/";
+
+  // Aby dodać stronę, dopisz kolejny wiersz.
+  // Opcjonalnie: thumb: "adres-obrazka.png" – własna miniatura zamiast zrzutu ekranu.
+  const pages = [
+    { name: "Szkolny timer lekcji",              slug: "school-timer/" },
+    { name: "Ćwiczenia użycia myszki",           slug: "mouse-practice-game/" },
+    { name: "Generator uwag",                    slug: "generator-uwag/" },
+    { name: "Literki",                           slug: "literki/" },
+    { name: "Dopasowywanie słów do ikonek",      slug: "slowa-ikony/" },
+    { name: "Gonitwa myszki",                    slug: "gonitwa_myszki" },
+    { name: "Zwinna myszka",                     slug: "zwinna_myszka" },
+    { name: "Pisanie i przeciąganie myszką",     slug: "write-and-drag" },
+    { name: "Łowca słów",                        slug: "lowca-slow" },
+    { name: "Drag, drop, sort",                  slug: "drag-drop-sort" },
+    { name: "Losuj temat",                       slug: "losuj-temat" },
+    { name: "Timer (2 funkcje)",                 slug: "2-timer" }
+  ];
+
+  // Liczba kafelków w rzędzie dla poszczególnych rozmiarów.
+  const SIZES = { small: 6, medium: 5, large: 4 };
+  // ==========================
+
+  const gallery = document.getElementById("gallery");
+  const sizeSelect = document.getElementById("sizeSelect");
+
+  function thumbUrl(url) {
+    return "https://s0.wp.com/mshots/v1/" + encodeURIComponent(url) + "?w=600&h=450";
+  }
+
+  function colorFor(text) {
+    let h = 0;
+    for (const ch of text) h = (h * 31 + ch.codePointAt(0)) % 360;
+    return "hsl(" + h + ", 45%, 55%)";
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy") ? resolve() : reject();
+      } catch (e) { reject(e); }
+      document.body.removeChild(ta);
+    });
+  }
+
+  pages.forEach(function (page) {
+    const url = page.url || (BASE_URL + page.slug);
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    // 1. miniatura
+    const thumbLink = document.createElement("a");
+    thumbLink.className = "thumb";
+    thumbLink.href = url;
+    thumbLink.target = "_blank";
+    thumbLink.rel = "noopener noreferrer";
+    thumbLink.setAttribute("aria-label", page.name);
+
+    const ph = document.createElement("div");
+    ph.className = "ph";
+    ph.style.background = colorFor(page.name);
+    ph.textContent = page.name.trim().charAt(0).toUpperCase();
+    thumbLink.appendChild(ph);
+
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.alt = "";
+    img.src = page.thumb || thumbUrl(url);
+    img.addEventListener("load", function () {
+      // mshots zwraca mały obrazek zastępczy, gdy zrzut jeszcze się generuje
+      if (img.naturalWidth < 100) { ph.style.display = ""; } else { ph.style.display = "none"; }
+    });
+    img.addEventListener("error", function () { img.remove(); });
+    thumbLink.appendChild(img);
+
+    // 2. nazwa
+    const name = document.createElement("a");
+    name.className = "name";
+    name.href = url;
+    name.target = "_blank";
+    name.rel = "noopener noreferrer";
+    name.textContent = page.name;
+    name.title = page.name;
+
+    // 3. link + Kopiuj
+    const row = document.createElement("div");
+    row.className = "linkrow";
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = url;
+    link.title = url;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy";
+    btn.textContent = "Kopiuj";
+    btn.addEventListener("click", function () {
+      copyText(url).then(function () {
+        btn.textContent = "Skopiowano!";
+        btn.classList.add("ok");
+        setTimeout(function () {
+          btn.textContent = "Kopiuj";
+          btn.classList.remove("ok");
+        }, 1500);
+      }).catch(function () {
+        btn.textContent = "Błąd";
+        setTimeout(function () { btn.textContent = "Kopiuj"; }, 1500);
+      });
+    });
+
+    row.appendChild(link);
+    row.appendChild(btn);
+
+    card.appendChild(thumbLink);
+    card.appendChild(name);
+    card.appendChild(row);
+    gallery.appendChild(card);
+  });
+
+  // ---- Rozmiar kafelków + RWD ----
+  function maxColsForWidth(w) {
+    if (w < 480)  return 1;
+    if (w < 700)  return 2;
+    if (w < 950)  return 3;
+    if (w < 1250) return 4;
+    if (w < 1500) return 5;
+    return 6;
+  }
+
+  function applyLayout() {
+    const wanted = SIZES[sizeSelect.value] || 5;
+    const cols = Math.min(wanted, maxColsForWidth(window.innerWidth));
+    gallery.style.setProperty("--cols", cols);
+  }
+
+  try {
+    const saved = localStorage.getItem("wybrane-strony-size");
+    if (saved && SIZES[saved]) sizeSelect.value = saved;
+  } catch (e) {}
+
+  sizeSelect.addEventListener("change", function () {
+    try { localStorage.setItem("wybrane-strony-size", sizeSelect.value); } catch (e) {}
+    applyLayout();
+  });
+  window.addEventListener("resize", applyLayout);
+  applyLayout();
+</script>
+</body>
+</html>
